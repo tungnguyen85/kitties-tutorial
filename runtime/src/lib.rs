@@ -275,6 +275,7 @@ impl pallet_sudo::Config for Runtime {
 /// Configure the pallet-kitties in pallets/kitties.
 impl pallet_kitties::Config for Runtime {
 	type Event = Event;
+	type Currency = Balances; // <-- Add this line
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -294,7 +295,6 @@ construct_runtime!(
 		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>},
 		// Include the custom logic from the pallet-kitties in the runtime.
 		SubstrateKitties: pallet_kitties::{Pallet, Call, Config<T>, Storage, Event<T>}, // <-- add this line
-
 	}
 );
 
