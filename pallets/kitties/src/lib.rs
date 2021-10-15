@@ -4,101 +4,111 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::{sp_runtime::traits::{Hash, Zero},
-                        dispatch::{DispatchResultWithPostInfo, DispatchResult},
-                        traits::{Currency, ExistenceRequirement, Randomness},
-                        pallet_prelude::*};
-    use frame_system::pallet_prelude::*;
-    use sp_io::hashing::blake2_128;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
+	use frame_support::{
+		sp_runtime::traits::Hash,
+		traits::{ Randomness, Currency, tokens::ExistenceRequirement },
+		transactional
+	};
+	use sp_io::hashing::blake2_128;
 
+	#[cfg(feature = "std")]
+	use serde::{Deserialize, Serialize};
 
-    // TODO Part II: Struct for holding Kitty information.
+	// ACTION #1: Write a Struct to hold Kitty information.
 
-    // TODO Part II: Enum and implementation to handle Gender type in Kitty struct.
+	// ACTION #2: Enum declaration for Gender.
 
-    #[pallet::pallet]
-    #[pallet::generate_store(trait Store)]
-    pub struct Pallet<T>(_);
+	// ACTION #3: Implementation to handle Gender type in Kitty struct.
 
-    /// Configure the pallet by specifying the parameters and types it depends on.
-    #[pallet::config]
-    pub trait Config: frame_system::Config {
-        /// Because this pallet emits events, it depends on the runtime's definition of an event.
-        type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+	#[pallet::pallet]
+	#[pallet::generate_store(pub(super) trait Store)]
+	pub struct Pallet<T>(_);
 
-        /// The Currency handler for the Kitties pallet.
-        type Currency: Currency<Self::AccountId>;
+	/// Configure the pallet by specifying the parameters and types it depends on.
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		/// Because this pallet emits events, it depends on the runtime's definition of an event.
+		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 
-        // TODO Part II: Specify the custom types for our runtime.
+		/// The Currency handler for the Kitties pallet.
+		type Currency: Currency<Self::AccountId>;
 
-    }
+		// ACTION #5: Specify the type for Randomness we want to specify for runtime.
 
-    // Our pallet's genesis configuration.
-    #[pallet::genesis_config]
-    pub struct GenesisConfig<T: Config> {
-        pub kitties: Vec<(T::AccountId, [u8; 16])>,
-    }
+		// ACTION #9: Add MaxKittyOwned constant
+	}
 
-    // Required to implement default for GenesisConfig.
-    #[cfg(feature = "std")]
-    impl<T: Config> Default for GenesisConfig<T> {
-        fn default() -> GenesisConfig<T> {
-            GenesisConfig { kitties: vec![] }
-        }
-    }
+	// Errors.
+	#[pallet::error]
+	pub enum Error<T> {
+		// TODO Part III
+	}
 
-    #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) {
-            // When building a kitty from genesis config, we require the dna and gender to be supplied.
-            // for (acct, dna, gender) in &self.kitties {
-            //     let _ = <Pallet<T>>::mint(acct, Some(dna.clone()), Some(gender.clone()));
-            // }
-        }
-    }
+	// Events.
+	#[pallet::event]
+	#[pallet::generate_deposit(pub(super) fn deposit_event)]
+	pub enum Event<T: Config> {
+		// TODO Part III
+	}
 
-    // Errors.
-    #[pallet::error]
-    pub enum Error<T> {
-        // TODO Part III
-    }
+	#[pallet::storage]
+	#[pallet::getter(fn all_kitties_count)]
+	pub(super) type KittyCnt<T: Config> = StorageValue<_, u64, ValueQuery>;
 
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        // TODO Part III
-    }
+	// ACTION #7: Remaining storage items.
 
-    // ACTION: Storage item to keep a count of all existing Kitties.
-    #[pallet::storage]
-    #[pallet::getter(fn kitty_cnt)]
-    /// Keeps track of the number of Kitties in existence.
-    pub(super) type KittyCnt<T: Config> = StorageValue<_, u64, ValueQuery>;
+	// TODO Part IV: Our pallet's genesis configuration.
+  #[pallet::genesis_config]
+  pub struct GenesisConfig<T: Config> {
+      pub kitties: Vec<(T::AccountId, [u8; 16])>,
+  }
 
-    // TODO Part II: Remaining storage items.
+  // Required to implement default for GenesisConfig.
+  #[cfg(feature = "std")]
+  impl<T: Config> Default for GenesisConfig<T> {
+      fn default() -> GenesisConfig<T> {
+          GenesisConfig { kitties: vec![] }
+      }
+  }
 
-    // TODO Part III: Our pallet's genesis configuration.
+  #[pallet::genesis_build]
+  impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+      fn build(&self) {
+          // When building a kitty from genesis config, we require the dna and gender to be supplied.
+          // for (acct, dna, gender) in &self.kitties {
+          //     let _ = <Pallet<T>>::mint(acct, Some(dna.clone()), Some(gender.clone()));
+          // }
+      }
+  }
 
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {
+	#[pallet::call]
+	impl<T: Config> Pallet<T> {
 
-        // TODO Part III: create_kitty
+		// TODO Part III: create_kitty
 
-        // TODO Part III: set_price
+		// TODO Part IV: set_price
 
-        // TODO Part III: transfer
+		// TODO Part IV: transfer
 
-        // TODO Part III: buy_kitty
+		// TODO Part IV: buy_kitty
 
-        // TODO Part III: breed_kitty
-    }
+		// TODO Part IV: breed_kitty
+	}
 
-    // TODO Parts II: helper function for Kitty struct
+	//** Our helper functions.**//
 
-    impl<T: Config> Pallet<T> {
-        // TODO Part III: helper functions for dispatchable functions
+	impl<T: Config> Pallet<T> {
 
-        // TODO: increment_nonce, random_hash, mint, transfer_from
+		// ACTION #4: helper function for Kitty struct
 
-    }
+		// TODO Part III: helper functions for dispatchable functions
+
+		// ACTION #6: funtion to randomly generate DNA
+
+		// TODO Part III: mint
+
+		// TODO Part IV: transfer_kitty_to
+	}
 }
