@@ -12,7 +12,7 @@ pub mod pallet {
 		transactional
 	};
 	use sp_io::hashing::blake2_128;
-  use scale_info::TypeInfo;
+    use scale_info::TypeInfo;
 
 	#[cfg(feature = "std")]
 	use serde::{Deserialize, Serialize};
@@ -124,7 +124,7 @@ pub mod pallet {
 	pub(super) type KittiesOwned<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BoundedVec<T::Hash, T::MaxKittyOwned>, ValueQuery>;
 
-	// TODO Part IV: Our pallet's genesis configuration.
+  // ACTION #11: Our pallet's genesis configuration.
   #[pallet::genesis_config]
   pub struct GenesisConfig<T: Config> {
       pub kitties: Vec<(T::AccountId, [u8; 16])>,
@@ -165,18 +165,75 @@ pub mod pallet {
 
 			// ACTION #4: Deposit `Created` event
             Self::deposit_event(Event::Created(sender, kitty_id));
+      Ok(())
+    }
+
+    /// Set the price for a Kitty.
+    ///
+    /// Updates Kitty price and updates storage.
+    #[pallet::weight(100)]
+    pub fn set_price(
+      origin: OriginFor<T>,
+      kitty_id: T::Hash,
+      new_price: Option<BalanceOf<T>>
+    ) -> DispatchResult {
+      let sender = ensure_signed(origin)?;
+
+      // ACTION #1a: Checking Kitty owner
+
+      let mut kitty = Self::kitties(&kitty_id).ok_or(<Error<T>>::KittyNotExist)?;
+
+      // ACTION #2: Set the Kitty price and update new Kitty infomation to storage.
+
+      // ACTION #3: Deposit a "PriceSet" event.
 
 			Ok(())
 		}
+
+    // ACTION #4: transfer
+
+    // buy_kitty
+    #[transactional]
+    #[pallet::weight(100)]
+    pub fn buy_kitty(
+      origin: OriginFor<T>,
+      kitty_id: T::Hash,
+      bid_price: BalanceOf<T>
+    ) -> DispatchResult {
+      let buyer = ensure_signed(origin)?;
+
+      // Check the kitty exists and buyer is not the current kitty owner
+ 
+      // ACTION #6: Check if the Kitty is for sale.
+
+      // ACTION #7: Check if buyer can receive Kitty.
+
+      // ACTION #8: Update Balances using the Currency trait.
+
+      Ok(())
     }
 
-		// TODO Part IV: set_price
+    /// Breed a Kitty.
+    ///
+    /// Breed two kitties to create a new generation
+    /// of Kitties.
+    #[pallet::weight(100)]
+    pub fn breed_kitty(
+      origin: OriginFor<T>,
+      kid1: T::Hash,
+      kid2: T::Hash
+    ) -> DispatchResult {
+      let sender = ensure_signed(origin)?;
 
-		// TODO Part IV: transfer
+      // Check: Verify `sender` owns both kitties (and both kitties exist).
 
-		// TODO Part IV: buy_kitty
+      // ACTION #9: Breed two Kitties using unique DNA
 
-		// TODO Part IV: breed_kitty
+      // ACTION #10: Mint new Kitty using new DNA
+
+      Ok(())
+    }
+  }
 
 	//** Our helper functions.**//
 
@@ -231,8 +288,8 @@ pub mod pallet {
             Ok(kitty_id)
         }
 
-		// Helper to check correct kitty owner
+    // ACTION #1b
 
-	// TODO Part IV: Write transfer_kitty_to
+    // ACTION #5: Write transfer_kitty_to
 	}
 }
