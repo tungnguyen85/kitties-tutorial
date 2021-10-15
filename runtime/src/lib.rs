@@ -272,11 +272,17 @@ impl pallet_sudo::Config for Runtime {
 	type Call = Call;
 }
 
+parameter_types! {              // <- add this macro
+  // One can own at most 9,999 Kitties
+  pub const MaxKittyOwned: u32 = 9999;
+}
+
 /// Configure the pallet-kitties in pallets/kitties.
 impl pallet_kitties::Config for Runtime {
 	type Event = Event;
 	type Currency = Balances; // <-- Add this line
 	type KittyRandomness = RandomnessCollectiveFlip; // <-- ACTION: add this line.
+	type MaxKittyOwned = MaxKittyOwned; // <- add this lines
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
