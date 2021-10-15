@@ -159,7 +159,7 @@ pub mod pallet {
             let sender = ensure_signed(origin)?;
 
             let kitty_id = Self::mint(&sender, None, None)?;
-        
+
             // Logging to the console
             log::info!("A kitty is born with ID: {:?}.", kitty_id);
 
@@ -194,6 +194,30 @@ pub mod pallet {
 		}
 
     // ACTION #4: transfer
+    #[pallet::weight(100)]
+    pub fn transfer(
+        origin: OriginFor<T>,
+        to: T::AccountId,
+        kitty_id: T::Hash
+    ) -> DispatchResult {
+        let from = ensure_signed(origin)?;
+
+        // Ensure the kitty exists and is called by the kitty owner
+        ensure!(Self::is_kitty_owner(&kitty_id, &from)?, <Error<T>>::NotKittyOwner);
+
+        // Verify the kitty is not transferring back to its owner.
+        ensure!(from != to, <Error<T>>::TransferToSelf);
+
+        // Verify the recipient has the capacity to receive one more kitty
+        let to_owned = <KittiesOwned<T>>::get(&to);
+        ensure!((to_owned.len() as u32) < T::MaxKittyOwned::get(), <Error<T>>::ExceedMaxKittyOwned);
+
+        Self::transfer_kitty_to(&kitty_id, &to)?;
+
+        Self::deposit_event(Event::Transferred(from, to, kitty_id));
+
+        Ok(())
+    }
 
     // buy_kitty
     #[transactional]
@@ -206,7 +230,7 @@ pub mod pallet {
       let buyer = ensure_signed(origin)?;
 
       // Check the kitty exists and buyer is not the current kitty owner
- 
+
       // ACTION #6: Check if the Kitty is for sale.
 
       // ACTION #7: Check if buyer can receive Kitty.
@@ -274,18 +298,18 @@ pub mod pallet {
             gender: gender.unwrap_or_else(Self::gen_gender),
             owner: owner.clone(),
             };
-        
+
             let kitty_id = T::Hashing::hash_of(&kitty);
-        
+
             // Performs this operation first as it may fail
             let new_cnt = Self::kitty_cnt().checked_add(1)
             .ok_or(<Error<T>>::KittyCntOverflow)?;
-        
+
             // Performs this operation first because as it may fail
             <KittiesOwned<T>>::try_mutate(&owner, |kitty_vec| {
             kitty_vec.try_push(kitty_id)
             }).map_err(|_| <Error<T>>::ExceedMaxKittyOwned)?;
-        
+
             <Kitties<T>>::insert(kitty_id, kitty);
             <KittyCnt<T>>::put(new_cnt);
             Ok(kitty_id)
@@ -299,5 +323,37 @@ pub mod pallet {
         }
     }
     // ACTION #5: Write transfer_kitty_to
+    #[transactional]
+    pub fn transfer_kitty_to(
+        kitty_id: &T::Hash,
+        to: &T::AccountId,
+    ) -> Result<(), Error<T>> {
+        let mut kitty = Self::kitties(&kitty_id).ok_or(<Error<T>>::KittyNotExist)?;
+
+        let prev_owner = kitty.owner.clone();
+
+        // Remove `kitty_id` from the KittyOwned vector of `prev_kitty_owner`
+        <KittiesOwned<T>>::try_mutate(&prev_owner, |owned| {
+            if let Some(ind) = owned.iter().position(|&id| id == *kitty_id) {
+                owned.swap_remove(ind);
+                return Ok(());
+            }
+            Err(())
+        }).map_err(|_| <Error<T>>::KittyNotExist)?;
+
+        // Update the kitty owner
+        kitty.owner = to.clone();
+        // Reset the ask price so the kitty is not for sale until `set_price()` is called
+        // by the current owner.
+        kitty.price = None;
+
+        <Kitties<T>>::insert(kitty_id, kitty);
+
+        <KittiesOwned<T>>::try_mutate(to, |vec| {
+            vec.try_push(*kitty_id)
+        }).map_err(|_| <Error<T>>::ExceedMaxKittyOwned)?;
+
+        Ok(())
+    }
 	}
 }
