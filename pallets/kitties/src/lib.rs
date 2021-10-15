@@ -12,37 +12,39 @@ pub mod pallet {
 		transactional
 	};
 	use sp_io::hashing::blake2_128;
-    use scale_info::TypeInfo;
+  use scale_info::TypeInfo;
 
 	#[cfg(feature = "std")]
 	use serde::{Deserialize, Serialize};
 
-	// ACTION #1: Write a Struct to hold Kitty information.
-    type AccountOf<T> = <T as frame_system::Config>::AccountId;
-    type BalanceOf<T> =
-        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
-    
-    // Struct for holding Kitty information.
-    #[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
-    #[scale_info(skip_type_params(T))]
-    pub struct Kitty<T: Config> {
-        pub dna: [u8; 16],
-        pub price: Option<BalanceOf<T>>,
-        pub gender: Gender,
-        pub owner: AccountOf<T>,
-    }
+	type AccountOf<T> = <T as frame_system::Config>::AccountId;
+	type BalanceOf<T> =
+		<<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-    #[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
-    #[scale_info(skip_type_params(T))]
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    pub enum Gender {
-        Male,
-        Female,
-    }
+	// Struct for holding Kitty information.
+	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+	#[scale_info(skip_type_params(T))]
+	pub struct Kitty<T: Config> {
+		pub dna: [u8; 16],   // Using 16 bytes to represent a kitty DNA
+		pub price: Option<BalanceOf<T>>,
+		pub gender: Gender,
+		pub owner: AccountOf<T>,
+	}
+	// Enum declaration for Gender.
+	#[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+	#[scale_info(skip_type_params(T))]
+	#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+	pub enum Gender {
+		Male,
+		Female,
+	}
 
-	// ACTION #2: Enum declaration for Gender.
-
-	// ACTION #3: Implementation to handle Gender type in Kitty struct.
+	// Implementation to handle Gender type in Kitty struct.
+	impl Default for Gender {
+		fn default() -> Self {
+			Gender::Male
+		}
+	}
 
 	#[pallet::pallet]
 	#[pallet::generate_store(pub(super) trait Store)]
@@ -57,32 +59,34 @@ pub mod pallet {
 		/// The Currency handler for the Kitties pallet.
 		type Currency: Currency<Self::AccountId>;
 
-		// ACTION #5: Specify the type for Randomness we want to specify for runtime.
-        type KittyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
+		/// The maximum amount of Kitties a single account can own.
+		#[pallet::constant]
+		type MaxKittyOwned: Get<u32>;
 
-		// ACTION #9: Add MaxKittyOwned constant
-        #[pallet::constant]
-        type MaxKittyOwned: Get<u32>;
+		/// The type of Randomness we want to specify for this pallet.
+		type KittyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
 	}
 
 	// Errors.
 	#[pallet::error]
 	pub enum Error<T> {
-		// TODO Part III
+		// ACTION #5a: Declare errors.
 	}
 
 	// Events.
 	#[pallet::event]
 	#[pallet::generate_deposit(pub(super) fn deposit_event)]
 	pub enum Event<T: Config> {
-		// TODO Part III
+		// ACTION #3: Declare events
 	}
 
+	// Storage items.
+
 	#[pallet::storage]
-	#[pallet::getter(fn all_kitties_count)]
+	#[pallet::getter(fn kitty_cnt)]
+	/// Keeps track of the number of Kitties in existence.
 	pub(super) type KittyCnt<T: Config> = StorageValue<_, u64, ValueQuery>;
 
-	// ACTION #7: Remaining storage items.
 	#[pallet::storage]
 	#[pallet::getter(fn kitties)]
 	/// Stores a Kitty's unique traits, owner and price.
@@ -93,7 +97,6 @@ pub mod pallet {
 	/// Keeps track of what accounts own what Kitty.
 	pub(super) type KittiesOwned<T: Config> =
 		StorageMap<_, Twox64Concat, T::AccountId, BoundedVec<T::Hash, T::MaxKittyOwned>, ValueQuery>;
-
 
 	// TODO Part IV: Our pallet's genesis configuration.
   #[pallet::genesis_config]
@@ -121,8 +124,17 @@ pub mod pallet {
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
+		/// Create a new unique kitty.
+		///
+		/// The actual kitty creation is done in the `mint()` function.
+		#[pallet::weight(100)]
+		pub fn create_kitty(origin: OriginFor<T>) -> DispatchResult {
+			// ACTION #1: create_kitty
 
-		// TODO Part III: create_kitty
+			// ACTION #4: Deposit `Created` event
+
+			Ok(())
+		}
 
 		// TODO Part IV: set_price
 
@@ -136,29 +148,30 @@ pub mod pallet {
 	//** Our helper functions.**//
 
 	impl<T: Config> Pallet<T> {
+		// Generate a random gender value
+		fn gen_gender() -> Gender {
+			let random = T::KittyRandomness::random(&b"gender"[..]).0;
+			match random.as_ref()[0] % 2 {
+				0 => Gender::Male,
+				_ => Gender::Female,
+			}
+		}
 
-		// ACTION #4: helper function for Kitty struct
-        fn gen_gender() -> Gender {
-            let random = T::KittyRandomness::random(&b"gender"[..]).0;
-            match random.as_ref()[0] % 2 {
-                0 => Gender::Male,
-                _ => Gender::Female,
-            }
-        }
+		// Generate a random DNA value
+		fn gen_dna() -> [u8; 16] {
+			let payload = (
+				T::KittyRandomness::random(&b"dna"[..]).0,
+				<frame_system::Pallet<T>>::block_number(),
+			);
+			payload.using_encoded(blake2_128)
+		}
 
-		// TODO Part III: helper functions for dispatchable functions
+		// Create new DNA with existing DNA
 
-		// ACTION #6: funtion to randomly generate DNA
-        fn gen_dna() -> [u8; 16] {
-            let payload = (
-                T::KittyRandomness::random(&b"dna"[..]).0,
-                <frame_system::Pallet<T>>::block_number(),
-            );
-            payload.using_encoded(blake2_128)
-        }
+		// ACTION #2: Write mint function
 
-		// TODO Part III: mint
+		// Helper to check correct kitty owner
 
-		// TODO Part IV: transfer_kitty_to
+	// TODO Part IV: Write transfer_kitty_to
 	}
 }
