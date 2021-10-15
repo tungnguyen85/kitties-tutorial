@@ -10,7 +10,7 @@ pub mod pallet {
                         pallet_prelude::*};
     use frame_system::pallet_prelude::*;
     use sp_io::hashing::blake2_128;
-    // use sp_io::Hashing::blake2_128;
+
 
     // TODO Part II: Struct for holding Kitty information.
 
@@ -33,6 +33,30 @@ pub mod pallet {
 
     }
 
+    // Our pallet's genesis configuration.
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        pub kitties: Vec<(T::AccountId, [u8; 16])>,
+    }
+
+    // Required to implement default for GenesisConfig.
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> GenesisConfig<T> {
+            GenesisConfig { kitties: vec![] }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            // When building a kitty from genesis config, we require the dna and gender to be supplied.
+            // for (acct, dna, gender) in &self.kitties {
+            //     let _ = <Pallet<T>>::mint(acct, Some(dna.clone()), Some(gender.clone()));
+            // }
+        }
+    }
+
     // Errors.
     #[pallet::error]
     pub enum Error<T> {
@@ -46,6 +70,10 @@ pub mod pallet {
     }
 
     // ACTION: Storage item to keep a count of all existing Kitties.
+    #[pallet::storage]
+    #[pallet::getter(fn kitty_cnt)]
+    /// Keeps track of the number of Kitties in existence.
+    pub(super) type KittyCnt<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     // TODO Part II: Remaining storage items.
 

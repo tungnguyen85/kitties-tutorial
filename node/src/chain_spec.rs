@@ -1,3 +1,4 @@
+use node_kitties_runtime::SubstrateKittiesConfig;
 use node_kitties_runtime::{
 	AccountId, AuraConfig, BalancesConfig, GenesisConfig, GrandpaConfig, Signature, SudoConfig,
 	SystemConfig, WASM_BINARY,
@@ -150,5 +151,10 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: root_key,
 		},
+		//-- snip --
+		substrate_kitties: SubstrateKittiesConfig {
+			kitties: vec![],
+			},
+		//-- snip --
 	}
 }
