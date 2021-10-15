@@ -230,12 +230,34 @@ pub mod pallet {
       let buyer = ensure_signed(origin)?;
 
       // Check the kitty exists and buyer is not the current kitty owner
+      let kitty = Self::kitties(&kitty_id).ok_or(<Error<T>>::KittyNotExist)?;
+      ensure!(kitty.owner != buyer, <Error<T>>::BuyerIsKittyOwner);
 
       // ACTION #6: Check if the Kitty is for sale.
+      // Check the kitty is for sale and the kitty ask price <= bid_price
+      if let Some(ask_price) = kitty.price {
+        ensure!(ask_price <= bid_price, <Error<T>>::KittyBidPriceTooLow);
+      } else {
+        Err(<Error<T>>::KittyNotForSale)?;
+      }
 
+      // Check the buyer has enough free balance
+      ensure!(T::Currency::free_balance(&buyer) >= bid_price, <Error<T>>::NotEnoughBalance);
       // ACTION #7: Check if buyer can receive Kitty.
+      // Verify the buyer has the capacity to receive one more kitty
+      let to_owned = <KittiesOwned<T>>::get(&buyer);
+      ensure!((to_owned.len() as u32) < T::MaxKittyOwned::get(), <Error<T>>::ExceedMaxKittyOwned);
 
+      let seller = kitty.owner.clone();
       // ACTION #8: Update Balances using the Currency trait.
+      // Transfer the amount from buyer to seller
+      T::Currency::transfer(&buyer, &seller, bid_price, ExistenceRequirement::KeepAlive)?;
+
+      // Transfer the kitty from seller to buyer
+      Self::transfer_kitty_to(&kitty_id, &buyer)?;
+
+      // Deposit relevant Event
+      Self::deposit_event(Event::Bought(buyer, seller, kitty_id, bid_price));
 
       Ok(())
     }
