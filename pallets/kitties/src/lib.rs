@@ -12,11 +12,33 @@ pub mod pallet {
 		transactional
 	};
 	use sp_io::hashing::blake2_128;
+    use scale_info::TypeInfo;
 
 	#[cfg(feature = "std")]
 	use serde::{Deserialize, Serialize};
 
 	// ACTION #1: Write a Struct to hold Kitty information.
+    type AccountOf<T> = <T as frame_system::Config>::AccountId;
+    type BalanceOf<T> =
+        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+    
+    // Struct for holding Kitty information.
+    #[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct Kitty<T: Config> {
+        pub dna: [u8; 16],
+        pub price: Option<BalanceOf<T>>,
+        pub gender: Gender,
+        pub owner: AccountOf<T>,
+    }
+
+    #[derive(Clone, Encode, Decode, PartialEq, RuntimeDebug, TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    pub enum Gender {
+        Male,
+        Female,
+    }
 
 	// ACTION #2: Enum declaration for Gender.
 
@@ -36,6 +58,7 @@ pub mod pallet {
 		type Currency: Currency<Self::AccountId>;
 
 		// ACTION #5: Specify the type for Randomness we want to specify for runtime.
+        type KittyRandomness: Randomness<Self::Hash, Self::BlockNumber>;
 
 		// ACTION #9: Add MaxKittyOwned constant
 	}
@@ -102,10 +125,24 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 
 		// ACTION #4: helper function for Kitty struct
+        fn gen_gender() -> Gender {
+            let random = T::KittyRandomness::random(&b"gender"[..]).0;
+            match random.as_ref()[0] % 2 {
+                0 => Gender::Male,
+                _ => Gender::Female,
+            }
+        }
 
 		// TODO Part III: helper functions for dispatchable functions
 
 		// ACTION #6: funtion to randomly generate DNA
+        fn gen_dna() -> [u8; 16] {
+            let payload = (
+                T::KittyRandomness::random(&b"dna"[..]).0,
+                <frame_system::Pallet<T>>::block_number(),
+            );
+            payload.using_encoded(blake2_128)
+        }
 
 		// TODO Part III: mint
 
